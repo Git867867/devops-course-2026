@@ -84,6 +84,7 @@ ClientAliveCountMax 2
 | 02-keys-configured | 26.10.2026 21:57 | Учётная запись devops, ключевая аутентификация |
 | 03-ssh-hardened | 26.10.2026 22:01 | Усиленная конфигурация SSH (порт 2222) |
 | 04-nginx-https | 26.10.2026 23:08 | Nginx: HTTPS, самоподписанный сертификат, редирект HTTP → HTTPS, деплой rsync |
+| 05-docker-compose | 27.10.2026 00:11 | Docker Compose: приложение и PostgreSQL, том db_data |
 
 ## 8. Веб-сервер
 
@@ -103,3 +104,14 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 - Срок действия сертификата: 365 дней; поле SAN: `DNS:devops.local`.
 - HTTP перенаправляется на HTTPS директивой `return 301 https://$host$request_uri`; протоколы TLS 1.2 и 1.3.
+
+## 9. Контейнеры
+
+- Docker Engine 29.9.2 установлен из официального репозитория Docker; плагин Compose v5.6.1. Учётная запись `devops` входит в группу `docker`.
+- Каталог проекта на сервере: `/home/devops/app`; файлы доставляются из каталога `app/` репозитория средствами rsync, каталог `.env` исключён из передачи и из репозитория.
+- Файл `.env` хранится только на сервере, права 600; содержит `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `DB_HOST=db`.
+- Сервисы Compose: `app` (образ `devops-app:1.0`, сборка из `app/Dockerfile`, процесс от имени `app`, публикация `127.0.0.1:5000:5000`) и `db` (`postgres:16-alpine`, healthcheck `pg_isready`, том `db_data`).
+- Сеть проекта: пользовательская bridge-сеть `app_backend`; приложение обращается к СУБД по имени `db`; порт 5432 не публикуется.
+- Том `app_db_data` сохраняется при `docker compose down` и удаляется при `docker compose down -v`.
+- Публикация через Nginx: `location /app/` с `proxy_pass http://127.0.0.1:5000/` и заголовками `Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`; статический ресурс `location /` сохранён.
+- Снимок состояния: `05-docker-compose`.

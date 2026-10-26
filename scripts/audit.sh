@@ -32,5 +32,13 @@ check "Сертификат действует не менее ${CERT_MIN_DAYS} 
       "$(sudo openssl x509 -checkend $((CERT_MIN_DAYS * 86400)) -noout -in /etc/ssl/certs/devops.crt >/dev/null 2>&1; echo $?)"
 check "Нет файлов, доступных на запись всем" "" "$(sudo find /var/www/devops-site -perm -o+w)"
 check "Права ключа TLS равны 600" "600" "$(sudo stat -c '%a' /etc/ssl/private/devops.key)"
+echo "[5] Контейнеры"
+check "Служба docker активна" "active" "$(systemctl is-active docker)"
+check "Контейнер приложения запущен" "true" "$(docker inspect -f '{{.State.Running}}' app-app-1 2>/dev/null)"
+check "СУБД в состоянии healthy" "healthy" "$(docker inspect -f '{{.State.Health.Status}}' app-db-1 2>/dev/null)"
+check "Порт приложения слушается только на 127.0.0.1" "" "$(ss -tln | awk '{print $4}' | grep -E ':5000$' | grep -v '^127\.0\.0\.1:5000$')"
+check "Порт СУБД не опубликован" "" "$(ss -tln | awk '{print $4}' | grep -E ':5432$')"
+check "Права файла .env равны 600" "600" "$(sudo stat -c '%a' /home/devops/app/.env 2>/dev/null)"
+check "Приложение доступно через Nginx" "200" "$(curl -sk -o /dev/null -w '%{http_code}' https://127.0.0.1/app/ -H 'Host: devops.local')"
 echo "Пройдено: $PASS, не пройдено: $FAIL"
 [[ $FAIL -eq 0 ]] && exit 0 || exit 1
