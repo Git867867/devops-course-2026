@@ -114,4 +114,3 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 - Сеть проекта: пользовательская bridge-сеть `app_backend`; приложение обращается к СУБД по имени `db`; порт 5432 не публикуется.
 - Том `app_db_data` сохраняется при `docker compose down` и удаляется при `docker compose down -v`.
 - Публикация через Nginx: `location /app/` с `proxy_pass http://127.0.0.1:5000/` и заголовками `Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`; статический ресурс `location /` сохранён.
-- Снимок состояния: `05-docker-compose`.
