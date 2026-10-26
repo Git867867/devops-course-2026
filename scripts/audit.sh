@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 PASS=0; FAIL=0
+CERT_MIN_DAYS="${CERT_MIN_DAYS:-30}"
 check() {
     local desc="$1" expected="$2" actual="$3"
     if [[ "$actual" == "$expected" ]]; then
@@ -24,5 +25,12 @@ check "Межсетевой экран активен" "active" "$(sudo ufw stat
 check "Политика по умолчанию для входящего трафика — deny" "deny" "$(sudo ufw status verbose | grep Default | awk '{print $2}')"
 echo "[3] Учётные записи"
 awk -F: '$3>=1000 && $3<65534 {printf "    %s (uid=%s)\n",$1,$3}' /etc/passwd
+echo "[4] Веб-сервер"
+check "Служба nginx активна" "active" "$(systemctl is-active nginx)"
+check "Конфигурация nginx корректна" "0" "$(sudo nginx -t >/dev/null 2>&1; echo $?)"
+check "Сертификат действует не менее ${CERT_MIN_DAYS} дней" "0" \
+      "$(sudo openssl x509 -checkend $((CERT_MIN_DAYS * 86400)) -noout -in /etc/ssl/certs/devops.crt >/dev/null 2>&1; echo $?)"
+check "Нет файлов, доступных на запись всем" "" "$(sudo find /var/www/devops-site -perm -o+w)"
+check "Права ключа TLS равны 600" "600" "$(sudo stat -c '%a' /etc/ssl/private/devops.key)"
 echo "Пройдено: $PASS, не пройдено: $FAIL"
 [[ $FAIL -eq 0 ]] && exit 0 || exit 1
