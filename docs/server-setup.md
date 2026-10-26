@@ -83,3 +83,23 @@ ClientAliveCountMax 2
 | 01-clean-install | 26.10.2026 20:27 | Чистая установка Ubuntu Server 24.04 |
 | 02-keys-configured | 26.10.2026 21:57 | Учётная запись devops, ключевая аутентификация |
 | 03-ssh-hardened | 26.10.2026 22:01 | Усиленная конфигурация SSH (порт 2222) |
+| 04-nginx-https | 26.10.2026 23:08 | Nginx: HTTPS, самоподписанный сертификат, редирект HTTP → HTTPS, деплой rsync |
+
+## 8. Веб-сервер
+
+- Устанавливаемый пакет: `nginx` (Ubuntu 24.04, версия nginx/1.24.0).
+- Конфигурация ресурса: `/etc/nginx/sites-available/devops-site`; символическая ссылка в `/etc/nginx/sites-enabled/`; стандартный ресурс `default` отключён.
+- Каталог ресурса: `/var/www/devops-site`, владелец `devops:devops`, права каталога 755, файлов 644 (модель «владелец пишет, веб-сервер читает»).
+- Сертификат: `/etc/ssl/certs/devops.crt` (права 644, владелец root); закрытый ключ: `/etc/ssl/private/devops.key` (права 600, владелец root).
+- Команда формирования сертификата:
+
+```
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout /etc/ssl/private/devops.key \
+  -out /etc/ssl/certs/devops.crt \
+  -subj "/CN=devops.local" \
+  -addext "subjectAltName=DNS:devops.local"
+```
+
+- Срок действия сертификата: 365 дней; поле SAN: `DNS:devops.local`.
+- HTTP перенаправляется на HTTPS директивой `return 301 https://$host$request_uri`; протоколы TLS 1.2 и 1.3.
