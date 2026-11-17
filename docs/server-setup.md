@@ -126,4 +126,3 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 - Первичный запуск: `cd ansible && ansible-playbook -i inventory/bootstrap.ini site.yml --ask-pass --ask-become-pass`.
 - Повторный запуск: `ansible-playbook site.yml` (prod, без ввода пароля).
 - Read-only аудит: `ansible-playbook verify.yml` (проверяет `sshd -T`, состояние контейнера и `/health`; изменений не вносит).
-- Примечание: на стенде запуски выполняются с `ANSIBLE_PIPELINING=False` — на данной связке SSH pipelining приводит к зависанию на `Gathering Facts`; `ansible.cfg` при этом соответствует методичке.
