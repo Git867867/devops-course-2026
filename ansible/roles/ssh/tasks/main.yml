@@ -1,0 +1,72 @@
+---
+- name: Create automation user
+  ansible.builtin.user:
+    name: devops
+    shell: /bin/bash
+    groups: sudo
+    append: true
+    create_home: true
+
+- name: Create SSH directory
+  ansible.builtin.file:
+    path: /home/devops/.ssh
+    state: directory
+    owner: devops
+    group: devops
+    mode: "0700"
+
+- name: Install automation public key
+  ansible.posix.authorized_key:
+    user: devops
+    state: present
+    key: "{{ lookup('file', lookup('env', 'HOME') + '/.ssh/devops_vm.pub') }}"
+    manage_dir: false
+
+- name: Allow non-interactive automation sudo
+  ansible.builtin.copy:
+    content: "devops ALL=(ALL) NOPASSWD:ALL\n"
+    dest: /etc/sudoers.d/devops
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+- name: Harden SSH only after key installation
+  ansible.builtin.copy:
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      PubkeyAuthentication yes
+      PermitEmptyPasswords no
+      AllowUsers student devops
+      X11Forwarding no
+    dest: /etc/ssh/sshd_config.d/00-ansible-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: "sshd -t -f %s"
+  notify: Restart SSH
+
+- name: Allow management and web ports
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - "22"
+    - "80"
+
+- name: Set incoming firewall policy
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: Set outgoing firewall policy
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+- name: Enable firewall
+  community.general.ufw:
+    state: enabled
+    logging: low
