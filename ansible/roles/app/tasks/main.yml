@@ -1,0 +1,33 @@
+---
+- name: Allow devops to inspect Docker
+  ansible.builtin.user:
+    name: devops
+    groups: docker
+    append: true
+
+- name: Pull reviewed application image
+  community.docker.docker_image:
+    name: "{{ app_image }}"
+    tag: "{{ app_tag }}"
+    source: pull
+    state: present
+
+- name: Run application container
+  community.docker.docker_container:
+    name: "{{ app_container_name }}"
+    image: "{{ app_image }}:{{ app_tag }}"
+    state: started
+    restart_policy: unless-stopped
+    published_ports:
+      - "127.0.0.1:{{ app_host_port }}:{{ app_internal_port }}"
+
+- name: Wait for application health
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ app_host_port }}/health"
+    return_content: true
+  register: app_health
+  retries: 15
+  delay: 2
+  until: >
+    (app_health.status | default(-1)) == 200 and
+    (app_health.json | default({})).get("status") == "ok"
