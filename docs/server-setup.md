@@ -119,7 +119,7 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 - Проект: каталог `ansible/` в репозитории `devops-course-2026`, ветка `feature/ansible`.
 - Управляющий узел: Linux (Ubuntu 24.04) в VirtualBox; Ansible core 2.16.3, sshpass 1.09; коллекции `ansible.posix` 1.6.2, `community.docker` 4.5.0, `community.general` 9.5.0.
-- Управляемый узел: VM `devops-vm`, host-only `192.168.56.102:22`, Ubuntu Server 24.04.
+- Управляемый узел: VM `devops-vm`, host-only `192.168.56.101:22`, Ubuntu Server 24.04.
 - Inventory: `inventory/bootstrap.ini` — пользователь `student`, пароль через `--ask-pass`, только первичный запуск; `inventory/prod.ini` — пользователь `devops`, ключ `~/.ssh/devops_vm`, неинтерактивные запуски.
 - Роли: `base` (проверка ОС, базовые пакеты, официальный репозиторий Docker, служба Docker); `ssh` (пользователь devops, ключ, sudo NOPASSWD, hardening SSH, UFW); `nginx` (reverse proxy на `127.0.0.1:5000`, отключение default site, проверка `nginx -t` перед reload); `app` (образ GHCR по полному SHA, контейнер, health-check).
 - Образ: `ghcr.io/git867867/devops-ci-app`; тег `ded7489e859121016e4c51b797a14f875a4a549c`; публикация `127.0.0.1:5000:5000`; health endpoint `GET /health` → `{"status":"ok"}`.
